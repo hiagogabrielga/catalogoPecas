@@ -8,38 +8,75 @@
 
   <style>
     body {
-      font-family: Arial;
-      background: #f4f4f4;
+      font-family: 'Segoe UI', Arial;
+      background: #eef2f7;
+      margin: 0;
+    }
+
+    header {
+      background: #222f41;
+      color: white;
+      padding: 15px 25px;
+      font-size: 20px;
+      font-weight: bold;
     }
 
     .container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
       padding: 20px;
     }
 
     .card {
       background: white;
-      width: 200px;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      padding: 10px;
-      text-align: center;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      padding: 15px;
+      transition: 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
     }
 
     .card img {
       width: 100%;
-      height: 120px;
+      height: 140px;
       object-fit: contain;
+      margin-bottom: 10px;
+    }
+
+    .codigo {
+      font-weight: bold;
+      color: #111827;
+      margin-bottom: 5px;
+    }
+
+    .nome {
+      font-size: 14px;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+
+    .info {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .headerName{
+      font-size: 26px;
+      font-family: 'Segoe UI', Arial;
+      margin-left: 10px;
+    }
+    header{
+      display: flex;
+      align-items: center;
     }
   </style>
 </head>
 <body>
 
-<h2>Lista de Materiais</h2>
-
-<button onclick="carregarDados()">Carregar Dados</button>
+<header><img src="./amaggi.png" alt="Logo Amaggi"> <span class="headerName">Catálogo de peças</span></header>
 
 <div class="container" id="cards"></div>
 
@@ -64,30 +101,48 @@ async function carregarDados() {
   }
 }
 
-function montarCards(materiais, estoque) {
+function imagemExiste(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = src;
+  });
+}
+
+async function montarCards(materiais, estoque) {
   const container = document.getElementById("cards");
   container.innerHTML = "";
 
-  materiais.forEach(mat => {
+  for (const mat of materiais) {
     const cod = mat.material;
     const est = estoque.find(e => e.material == cod);
 
-    if (est) {
-      const card = document.createElement("div");
-      card.className = "card";
+    if (!est) continue;
 
-      card.innerHTML = `
-        <img src="imagens/${cod}.png" onerror="this.src='imagens/default.png'">
-        <div><strong>Código:</strong> ${cod}</div>
-        <div><strong>Nome:</strong> ${mat.nome}</div>
-        <div><strong>Qtd:</strong> ${est.quant}</div>
-        <div><strong>Unidade:</strong> ${est.unidade}</div>
-      `;
+    const imgPath = `imagens/${cod}.png`;
+    const existe = await imagemExiste(imgPath);
 
-      container.appendChild(card);
-    }
-  });
+    // 🔥 Se não tiver imagem, ignora
+    if (!existe) continue;
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+      <img src="${imgPath}">
+      <div class="codigo">Código: ${cod}</div>
+      <div class="nome">${mat.nome}</div>
+      <div class="info">Qtd: ${est.quant}</div>
+      <div class="info">Unidade: ${est.unidade}</div>
+    `;
+
+    container.appendChild(card);
+  }
 }
+
+// 🚀 Carrega automaticamente ao abrir
+window.onload = carregarDados;
 </script>
 
 </body>
