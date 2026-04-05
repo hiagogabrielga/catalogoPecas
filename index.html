@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Materiais</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f4f4;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      width: 200px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      padding: 10px;
+      text-align: center;
+    }
+
+    .card img {
+      width: 100%;
+      height: 120px;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Lista de Materiais</h2>
+
+<button onclick="carregarDados()">Carregar Dados</button>
+
+<div class="container" id="cards"></div>
+
+<script>
+async function lerExcel(caminho) {
+  const response = await fetch(caminho);
+  const arrayBuffer = await response.arrayBuffer();
+
+  const workbook = XLSX.read(arrayBuffer, { type: "array" });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(sheet);
+}
+
+async function carregarDados() {
+  try {
+    const materiais = await lerExcel("dados/nomes_usuais.xlsx");
+    const estoque = await lerExcel("dados/pecas_estoque.xlsx");
+
+    montarCards(materiais, estoque);
+  } catch (erro) {
+    console.error("Erro ao carregar arquivos:", erro);
+  }
+}
+
+function montarCards(materiais, estoque) {
+  const container = document.getElementById("cards");
+  container.innerHTML = "";
+
+  materiais.forEach(mat => {
+    const cod = mat.material;
+    const est = estoque.find(e => e.material == cod);
+
+    if (est) {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.innerHTML = `
+        <img src="imagens/${cod}.png" onerror="this.src='imagens/default.png'">
+        <div><strong>Código:</strong> ${cod}</div>
+        <div><strong>Nome:</strong> ${mat.nome}</div>
+        <div><strong>Qtd:</strong> ${est.quantidade}</div>
+        <div><strong>Unidade:</strong> ${est.unidade}</div>
+      `;
+
+      container.appendChild(card);
+    }
+  });
+}
+</script>
+
+</body>
+</html>
