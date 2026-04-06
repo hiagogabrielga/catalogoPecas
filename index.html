@@ -106,6 +106,10 @@
       let listaCompleta = [];
       let debounceTimer;
 
+      const CACHE_KEY = "catalogoPecas";
+      const CACHE_VERSION_KEY = "catalogoPecasVersao";
+      const VERSAO_ATUAL = "1.1";
+
       async function lerExcel(caminho) {
         const response = await fetch(caminho);
         const arrayBuffer = await response.arrayBuffer();
@@ -135,21 +139,23 @@
           const existe = await imagemExiste(caminho);
           if (existe) return caminho;
         }
-        return null; // nenhuma imagem encontrada
+        return null;
       }
 
       async function carregarDados() {
         try {
-          // Primeiro tenta pegar do localStorage
-          const dadosSalvos = localStorage.getItem("catalogoPecas");
-          if (dadosSalvos) {
+          const versaoSalva = localStorage.getItem(CACHE_VERSION_KEY);
+          const dadosSalvos = localStorage.getItem(CACHE_KEY);
+
+          if (dadosSalvos && versaoSalva === VERSAO_ATUAL) {
             listaCompleta = JSON.parse(dadosSalvos);
             renderizar(listaCompleta);
-            console.log("Dados carregados do localStorage");
+            console.log("Cache válido - carregado do localStorage");
             return;
           }
 
-          // Se não tiver no localStorage, lê do Excel
+          console.log("Cache inválido ou inexistente - recarregando...");
+
           const materiais = await lerExcel("dados/nomes_usuais.xlsx");
           let cont = 0;
 
@@ -158,6 +164,7 @@
               const cod = String(mat.material);
               const img = await encontrarImagem(cod);
               if (!img) return null;
+
               cont++;
               return {
                 codigo: cod,
@@ -171,9 +178,10 @@
           listaCompleta = candidatos.filter(Boolean);
           renderizar(listaCompleta);
 
-          // Salva no localStorage para próximas visitas
-          localStorage.setItem("catalogoPecas", JSON.stringify(listaCompleta));
-          console.log("Dados salvos no localStorage");
+          localStorage.setItem(CACHE_KEY, JSON.stringify(listaCompleta));
+          localStorage.setItem(CACHE_VERSION_KEY, VERSAO_ATUAL);
+
+          console.log("Novo cache salvo");
         } catch (erro) {
           console.error("Erro ao carregar arquivos:", erro);
         }
