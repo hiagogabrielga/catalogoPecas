@@ -108,7 +108,7 @@
 
       const CACHE_KEY = "catalogoPecas";
       const CACHE_VERSION_KEY = "catalogoPecasVersao";
-      const VERSAO_ATUAL = "1.1";
+      const VERSAO_ATUAL = "1.2";
 
       async function lerExcel(caminho) {
         const response = await fetch(caminho);
@@ -194,7 +194,7 @@
       <img src="${item.imagem}" loading="lazy">
       <div class="codigo">Código: ${item.codigo}</div>
       <div class="nome">${item.nome}</div>
-    `;
+    `;//<div class="nome">${item.contagem}</div>
         return card;
       }
 
