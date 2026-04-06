@@ -118,9 +118,7 @@
         try {
           const response = await fetch(url, { method: "HEAD" });
           if (response.ok) return true;
-        } catch (e) {
-          // fallback
-        }
+        } catch (e) {}
 
         return new Promise((resolve) => {
           const img = new Image();
@@ -132,26 +130,33 @@
 
       async function encontrarImagem(codigo) {
         const extensoes = ["png", "jpg", "jpeg", "gif"];
-
         for (let ext of extensoes) {
           const caminho = `imagens/${codigo}.${ext}`;
           const existe = await imagemExiste(caminho);
           if (existe) return caminho;
-          else console.log();
         }
-
         return null; // nenhuma imagem encontrada
       }
-      let cont = 0;
+
       async function carregarDados() {
         try {
+          // Primeiro tenta pegar do localStorage
+          const dadosSalvos = localStorage.getItem("catalogoPecas");
+          if (dadosSalvos) {
+            listaCompleta = JSON.parse(dadosSalvos);
+            renderizar(listaCompleta);
+            console.log("Dados carregados do localStorage");
+            return;
+          }
+
+          // Se não tiver no localStorage, lê do Excel
           const materiais = await lerExcel("dados/nomes_usuais.xlsx");
+          let cont = 0;
 
           const candidatos = await Promise.all(
             materiais.map(async (mat) => {
               const cod = String(mat.material);
               const img = await encontrarImagem(cod);
-
               if (!img) return null;
               cont++;
               return {
@@ -165,6 +170,10 @@
 
           listaCompleta = candidatos.filter(Boolean);
           renderizar(listaCompleta);
+
+          // Salva no localStorage para próximas visitas
+          localStorage.setItem("catalogoPecas", JSON.stringify(listaCompleta));
+          console.log("Dados salvos no localStorage");
         } catch (erro) {
           console.error("Erro ao carregar arquivos:", erro);
         }
@@ -174,10 +183,10 @@
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `
-    <img src="${item.imagem}" loading="lazy">
-    <div class="codigo">Código: ${item.codigo}</div>
-    <div class="nome">${item.nome}</div>
-  `;
+      <img src="${item.imagem}" loading="lazy">
+      <div class="codigo">Código: ${item.codigo}</div>
+      <div class="nome">${item.nome}</div>
+    `;
         return card;
       }
 
