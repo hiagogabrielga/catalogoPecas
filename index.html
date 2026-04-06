@@ -22,7 +22,7 @@
         font-family: "Segoe UI", Arial;
         background: #eef2f7;
         margin: 0;
-      } 
+      }
       header {
         display: flex;
         align-items: center;
@@ -114,46 +114,56 @@
         return XLSX.utils.sheet_to_json(sheet);
       }
 
-      function imagemExiste(src) {
+      async function imagemExiste(url) {
+        try {
+          const response = await fetch(url, { method: "HEAD" });
+          if (response.ok) return true;
+        } catch (e) {
+          // fallback
+        }
+
         return new Promise((resolve) => {
           const img = new Image();
           img.onload = () => resolve(true);
           img.onerror = () => resolve(false);
-          img.src = src;
+          img.src = url;
         });
       }
 
+      async function encontrarImagem(codigo) {
+        const extensoes = ["png", "jpg", "jpeg", "gif"];
+
+        for (let ext of extensoes) {
+          const caminho = `imagens/${codigo}.${ext}`;
+          const existe = await imagemExiste(caminho);
+          if (existe) return caminho;
+          else console.log();
+        }
+
+        return null; // nenhuma imagem encontrada
+      }
+      let cont = 0;
       async function carregarDados() {
         try {
-          const [materiais, estoque] = await Promise.all([
-            lerExcel("dados/nomes_usuais.xlsx"),
-            lerExcel("dados/pecas_estoque.xlsx"),
-          ]);
+          const materiais = await lerExcel("dados/nomes_usuais.xlsx");
 
-          const estoqueMap = new Map(
-            estoque.map((e) => [String(e.material), e]),
-          );
-
-          const candidatos = materiais
-            .map((mat) => {
+          const candidatos = await Promise.all(
+            materiais.map(async (mat) => {
               const cod = String(mat.material);
-              const est = estoqueMap.get(cod);
-              if (!est) return null;
+              const img = await encontrarImagem(cod);
+
+              if (!img) return null;
+              cont++;
               return {
                 codigo: cod,
                 nome: mat.nome,
-                quantidade: est.quant,
-                unidade: est.unidade,
-                imagem: `imagens/${cod}.png`,
+                imagem: img,
+                contagem: cont,
               };
-            })
-            .filter(Boolean);
-
-          const existencias = await Promise.all(
-            candidatos.map((c) => imagemExiste(c.imagem)),
+            }),
           );
 
-          listaCompleta = candidatos.filter((_, i) => existencias[i]);
+          listaCompleta = candidatos.filter(Boolean);
           renderizar(listaCompleta);
         } catch (erro) {
           console.error("Erro ao carregar arquivos:", erro);
@@ -167,8 +177,7 @@
     <img src="${item.imagem}" loading="lazy">
     <div class="codigo">Código: ${item.codigo}</div>
     <div class="nome">${item.nome}</div>
-    <div class="info">Qtd: ${item.quantidade}</div>
-    <div class="info">Unidade: ${item.unidade}</div>
+    <div class="n Item">${item.contagem}</div>
   `;
         return card;
       }
