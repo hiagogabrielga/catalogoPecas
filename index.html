@@ -17,88 +17,23 @@
     <link rel="icon" type="image/png" sizes="16x16" href="logo.png" />
     <link rel="apple-touch-icon" href="logo.png" />
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-    <style>
-      body {
-        font-family: "Segoe UI", Arial;
-        background: #eef2f7;
-        margin: 0;
-      }
-      header {
-        display: flex;
-        align-items: center;
-        background: #222f41;
-        color: white;
-        padding: 15px 25px;
-      }
-      .headerName {
-        font-size: 26px;
-        margin-left: 10px;
-      }
-      .search-box {
-        padding: 15px 20px;
-        background: #f9fafb;
-        border-bottom: 1px solid #ddd;
-      }
-      .search-box input {
-        width: 80%;
-        padding: 10px 15px;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        font-size: 14px;
-        outline: none;
-      }
-      .container {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 20px;
-        padding: 20px;
-      }
-      .card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        padding: 15px;
-        transition: 0.2s;
-      }
-      .card:hover {
-        transform: translateY(-5px);
-      }
-      .card img {
-        width: 100%;
-        height: 140px;
-        object-fit: contain;
-        margin-bottom: 10px;
-      }
-      .codigo {
-        font-weight: bold;
-        color: #111827;
-        margin-bottom: 5px;
-      }
-      .nome {
-        font-size: 14px;
-        color: #374151;
-        margin-bottom: 8px;
-      }
-      .info {
-        font-size: 13px;
-        color: #6b7280;
-      }
-    </style>
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header>
-      <img src="./amaggi.png" alt="Logo Amaggi" />
-      <span class="headerName">Catálogo de peças</span>
+      <div class="imgName">
+        <img src="./amaggi.png" alt="Logo Amaggi" />
+        <span class="headerName">Catálogo de peças</span>
+      </div>
+      <div class="search-box">
+        <input
+          type="text"
+          id="search"
+          placeholder="🔍 Buscar por código ou nome..."
+          oninput="filtrarDebounced()"
+        />
+      </div>
     </header>
-
-    <div class="search-box">
-      <input
-        type="text"
-        id="search"
-        placeholder="🔍 Buscar por código ou nome..."
-        oninput="filtrarDebounced()"
-      />
-    </div>
 
     <div class="container" id="cards"></div>
 
@@ -108,7 +43,7 @@
 
       const CACHE_KEY = "catalogoPecas";
       const CACHE_VERSION_KEY = "catalogoPecasVersao";
-      const VERSAO_ATUAL = "1.2";
+      const VERSAO_ATUAL = "1.3";
 
       async function lerExcel(caminho) {
         const response = await fetch(caminho);
@@ -142,6 +77,19 @@
         return null;
       }
 
+      function agruparPorCategoria(lista) {
+        return lista.reduce((acc, item) => {
+          const categoria = item.categoria || "Sem categoria";
+
+          if (!acc[categoria]) {
+            acc[categoria] = [];
+          }
+
+          acc[categoria].push(item);
+          return acc;
+        }, {});
+      }
+
       async function carregarDados() {
         try {
           const versaoSalva = localStorage.getItem(CACHE_VERSION_KEY);
@@ -171,6 +119,7 @@
                 nome: mat.nome,
                 imagem: img,
                 contagem: cont,
+                categoria: mat.categoria,
               };
             }),
           );
@@ -194,26 +143,74 @@
       <img src="${item.imagem}" loading="lazy">
       <div class="codigo">Código: ${item.codigo}</div>
       <div class="nome">${item.nome}</div>
-    `;//<div class="nome">${item.contagem}</div>
+    `; //<div class="nome">${item.contagem}</div>
         return card;
       }
 
       function renderizar(lista) {
         const container = document.getElementById("cards");
-        const fragment = document.createDocumentFragment();
-        lista.forEach((item) => fragment.appendChild(criarCard(item)));
-        container.replaceChildren(fragment);
+        container.innerHTML = ``;
+
+        const agrupado = agruparPorCategoria(lista);
+
+        Object.entries(agrupado).forEach(([categoria, itens]) => {
+          // Container da categoria
+          const categoriaDiv = document.createElement("div");
+          categoriaDiv.className = "categoria";
+
+          // Header (título + botão)
+          const header = document.createElement("div");
+          header.className = "categoria-header";
+
+          const titulo = document.createElement("h2");
+          titulo.textContent = categoria;
+
+          const botao = document.createElement("button");
+          botao.className = "toggle-btn";
+          botao.textContent = "⯆";
+
+          header.appendChild(titulo);
+          header.appendChild(botao);
+
+          // Conteúdo (cards)
+          const conteudo = document.createElement("div");
+          conteudo.className = "categoria-conteudo";
+
+          itens.forEach((item) => {
+            conteudo.appendChild(criarCard(item));
+          });
+
+          // Evento de expandir/recolher
+          botao.onclick = () => {
+            const fechado = conteudo.classList.toggle("fechado");
+            botao.textContent = fechado ? "⯈" : "⯆";
+          };
+
+          categoriaDiv.appendChild(header);
+          categoriaDiv.appendChild(conteudo);
+          container.appendChild(categoriaDiv);
+        });
+      }
+
+      function removerAcentos(texto) {
+        return texto
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase();
       }
 
       function filtrarDebounced() {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
-          const termo = document.getElementById("search").value.toLowerCase();
-          const filtrados = listaCompleta.filter(
-            (item) =>
-              item.codigo.includes(termo) ||
-              item.nome.toLowerCase().includes(termo),
-          );
+          const termo = removerAcentos(document.getElementById("search").value);
+
+          const filtrados = listaCompleta.filter((item) => {
+            const codigo = removerAcentos(item.codigo);
+            const nome = removerAcentos(item.nome);
+
+            return codigo.includes(termo) || nome.includes(termo);
+          });
+
           renderizar(filtrados);
         }, 200);
       }
