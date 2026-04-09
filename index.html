@@ -23,7 +23,7 @@
     <header>
       <div class="imgName">
         <img src="./amaggi.png" alt="Logo Amaggi" />
-        <span class="headerName">Catálogo de peças</span>
+        <span class="headerName">Catálogo externo de peças</span>
       </div>
       <div class="search-box">
         <input
@@ -43,7 +43,7 @@
 
       const CACHE_KEY = "catalogoPecas";
       const CACHE_VERSION_KEY = "catalogoPecasVersao";
-      const VERSAO_ATUAL = "1.3";
+      const VERSAO_ATUAL = "1.6";
 
       async function lerExcel(caminho) {
         const response = await fetch(caminho);
@@ -136,14 +136,39 @@
         }
       }
 
+      function mostrarToast(texto) {
+        const toast = document.getElementById("toast");
+        toast.textContent = texto;
+        toast.classList.add("mostrar");
+        setTimeout(() => toast.classList.remove("mostrar"), 2000);
+      }
+
+      function copiarCodigo(codigo) {
+        let codigoLimpo = codigo.replace(/\\/g, '')
+        navigator.clipboard.writeText(codigoLimpo);
+        mostrarToast(`Código ${codigoLimpo} copiado`);
+      }
+
       function criarCard(item) {
+        const textoParaCopiar = `${item.codigo} - ${item.nome}`
+          .replace(/'/g, '\\"')
+          .replace(/"/g, '\\"');
+
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `
-      <img src="${item.imagem}" loading="lazy">
-      <div class="codigo">Código: ${item.codigo}</div>
-      <div class="nome">${item.nome}</div>
-    `; //<div class="nome">${item.contagem}</div>
+        <img src="${item.imagem}" loading="lazy">
+    <div class="codigo-linha">
+      <span class="codigo">Código: ${item.codigo}</span>
+      <button class="copiar-btn">📋</button>
+    </div>
+    <div class="nome">${item.nome}</div>`;
+
+        const botao = card.querySelector(".copiar-btn");
+        botao.addEventListener("click", () => {
+          copiarCodigo(textoParaCopiar);
+        });
+
         return card;
       }
 
@@ -217,5 +242,6 @@
 
       window.onload = carregarDados;
     </script>
+    <div id="toast" class="toast"></div>
   </body>
 </html>

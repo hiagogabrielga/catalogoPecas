@@ -188,6 +188,7 @@ header {
     opacity 0.3s,
     transform 0.3s;
   z-index: 9999;
+  margin-left: 20px;
 }
 
 .toast.mostrar {
