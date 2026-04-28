@@ -43,7 +43,7 @@
 
       const CACHE_KEY = "catalogoPecas";
       const CACHE_VERSION_KEY = "catalogoPecasVersao";
-      const VERSAO_ATUAL = "1.6";
+      const VERSAO_ATUAL = "1.7";
 
       async function lerExcel(caminho) {
         const response = await fetch(caminho);
@@ -70,7 +70,7 @@
       async function encontrarImagem(codigo) {
         const extensoes = ["png", "jpg", "jpeg", "gif"];
         for (let ext of extensoes) {
-          const caminho = `imagens/${codigo}.${ext}`;
+          const caminho = `dados-catalago-pcm-externo/imagens/${codigo}.${ext}`;
           const existe = await imagemExiste(caminho);
           if (existe) return caminho;
         }
@@ -104,7 +104,7 @@
 
           console.log("Cache inválido ou inexistente - recarregando...");
 
-          const materiais = await lerExcel("dados/nomes_usuais.xlsx");
+          const materiais = await lerExcel("dados-catalago-pcm-externo/nomes_usuais.xlsx");
           let cont = 0;
 
           const candidatos = await Promise.all(
